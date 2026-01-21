@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+if [[ -z "${BASH_VERSION-}" ]]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 if ! command -v git >/dev/null 2>&1; then
