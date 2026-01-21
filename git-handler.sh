@@ -6,6 +6,36 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
+if [[ "${1-}" == "--init" ]]; then
+  repo_url="${2-}"
+  if [[ -z "${repo_url}" ]]; then
+    echo "Usage: $0 --init <repo_url>" >&2
+    exit 1
+  fi
+
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git init
+  fi
+
+  if git remote get-url origin >/dev/null 2>&1; then
+    git remote set-url origin "${repo_url}"
+  else
+    git remote add origin "${repo_url}"
+  fi
+
+  if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+    read -r -p "Initial commit message [Initial commit]: " init_message
+    init_message="${init_message:-Initial commit}"
+    git add -A
+    git commit -m "${init_message}"
+  fi
+
+  current_branch="$(git rev-parse --abbrev-ref HEAD)"
+  git push -u origin "${current_branch}"
+  echo "Initialized repo and pushed to ${repo_url} on ${current_branch}."
+  exit 0
+fi
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Not inside a git repository." >&2
   exit 1
