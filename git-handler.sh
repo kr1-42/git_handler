@@ -41,6 +41,71 @@ if [[ "${1-}" == "--init" ]]; then
   exit 0
 fi
 
+if [[ "${1-}" == "--move-to-branch" ]]; then
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Not inside a git repository." >&2
+    exit 1
+  fi
+
+  original_branch="$(git rev-parse --abbrev-ref HEAD)"
+  if [[ "${original_branch}" == "HEAD" ]]; then
+    echo "Detached HEAD. Please check out a branch first." >&2
+    exit 1
+  fi
+
+  status_output="$(git status --porcelain)"
+  has_uncommitted=false
+  if [[ -n "${status_output}" ]]; then
+    has_uncommitted=true
+  fi
+
+  upstream_ref=""
+  ahead_count=0
+  if git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+    upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name @{u})"
+    ahead_count="$(git rev-list --count "${upstream_ref}..HEAD")"
+  fi
+
+  if [[ "${has_uncommitted}" == false ]] && (( ahead_count == 0 )); then
+    echo "No local changes to move from '${original_branch}'."
+    exit 0
+  fi
+
+  read -r -p "Enter new branch name: " new_branch
+  new_branch="${new_branch## }"
+  new_branch="${new_branch%% }"
+
+  if [[ -z "${new_branch}" ]]; then
+    echo "Branch name cannot be empty." >&2
+    exit 1
+  fi
+
+  if git show-ref --verify --quiet "refs/heads/${new_branch}"; then
+    read -r -p "Branch '${new_branch}' already exists. Switch to it? [y/N]: " switch_existing
+    if [[ ! "${switch_existing}" =~ ^[Yy]$ ]]; then
+      echo "Aborted." >&2
+      exit 1
+    fi
+    git switch "${new_branch}"
+  else
+    git switch -c "${new_branch}"
+  fi
+
+  if (( ahead_count > 0 )) && [[ -n "${upstream_ref}" ]]; then
+    read -r -p "Reset '${original_branch}' to '${upstream_ref}' (drops ${ahead_count} commit(s) from ${original_branch})? [y/N]: " reset_choice
+    if [[ "${reset_choice}" =~ ^[Yy]$ ]]; then
+      git switch "${original_branch}"
+      git reset --hard "${upstream_ref}"
+      git switch "${new_branch}"
+      echo "Moved commits to '${new_branch}' and reset '${original_branch}' to '${upstream_ref}'."
+      exit 0
+    fi
+  fi
+
+  echo "Moved work to '${new_branch}'."
+  exit 0
+fi
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Not inside a git repository." >&2
   exit 1
