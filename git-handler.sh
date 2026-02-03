@@ -11,6 +11,55 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
+show_help() {
+  cat << 'EOF'
+git-handler - Streamline Git workflows with feature branch management
+
+USAGE:
+  git-handler [OPTIONS]
+
+OPTIONS:
+  (no options)        Interactive feature branch workflow
+                      - On main/master/trunk: create or switch to a feature branch
+                      - On feature/* branch: commit all changes and push to origin
+
+  --init <repo_url>   Initialize repository and push to remote
+                      - Runs git init if needed
+                      - Sets origin to <repo_url>
+                      - Creates initial commit if no commits exist
+                      - Pushes to origin
+
+  --move-to-branch    Move uncommitted changes and/or local commits to a new branch
+                      - Prompts for new branch name
+                      - Optionally resets original branch to upstream
+
+  -h, --help          Show this help message
+
+EXAMPLES:
+  git-handler
+      Start or continue feature branch workflow
+
+  git-handler --init git@github.com:user/repo.git
+      Initialize current directory as a repo and push to GitHub
+
+  git-handler --move-to-branch
+      Move accidental work from main to a new branch
+
+BRANCH NAMING:
+  New branches are prefixed with 'feature/'. When prompted, enter only the suffix:
+    Enter branch name (without 'feature/'): login-page
+    Creates: feature/login-page
+
+PROTECTED BRANCHES:
+  main, master, trunk - script won't commit directly to these branches
+EOF
+}
+
+if [[ "${1-}" == "-h" ]] || [[ "${1-}" == "--help" ]]; then
+  show_help
+  exit 0
+fi
+
 if [[ "${1-}" == "--init" ]]; then
   repo_url="${2-}"
   if [[ -z "${repo_url}" ]]; then
