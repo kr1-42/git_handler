@@ -260,3 +260,27 @@ git commit -m "${commit_message}"
 git push -u origin "${branch_name}"
 
 echo "Done: ${branch_name} pushed to origin."
+
+target_branch="master"
+if ! git show-ref --verify --quiet "refs/heads/${target_branch}"; then
+  if git show-ref --verify --quiet "refs/heads/main"; then
+    target_branch="main"
+  elif git show-ref --verify --quiet "refs/heads/trunk"; then
+    target_branch="trunk"
+  else
+    echo "No master/main/trunk branch found locally. Skipping checkout and pull."
+    exit 0
+  fi
+fi
+
+git checkout "${target_branch}"
+
+read -r -p "Has '${branch_name}' been merged into '${target_branch}'? [y/N]: " merged_choice
+if [[ "${merged_choice}" =~ ^[Yy]$ ]]; then
+  git pull --ff-only
+  echo "Updated ${target_branch} with latest changes."
+else
+  echo "Skipped pulling ${target_branch}. Pull once your branch is merged."
+fi
+
+exit 0
