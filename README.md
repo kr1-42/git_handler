@@ -6,6 +6,7 @@ A Bash utility to streamline Git workflows with feature branch management, repos
 
 - **Feature branch workflow** — Automatically creates `feature/` prefixed branches
 - **Repository initialization** — Set up a new repo and push to remote in one command
+- **Push a subdirectory** — Send a specific folder to another remote via `git subtree`
 - **Move changes to branch** — Rescue uncommitted or committed work from `main`/`master` to a new branch
 - **Interactive branch selection** — Switch between existing branches easily
 
@@ -106,6 +107,27 @@ $ git-handler --move-to-branch
 Enter new branch name: feature/my-work
 Reset 'main' to 'origin/main' (drops 2 commit(s) from main)? [y/N]: y
 Moved commits to 'feature/my-work' and reset 'main' to 'origin/main'.
+```
+
+### Push a Subdirectory to Another Remote
+
+```bash
+git-handler --push-dir <dir> <repo_url> [branch]
+```
+
+Pushes only the specified subdirectory to a different remote repository using `git subtree`.
+
+**What it does:**
+
+1. Ensures the working tree is clean
+2. Adds or updates a temporary remote named `git-handler-<dir>` pointing to `<repo_url>`
+3. Runs `git subtree split --prefix=<dir>` to build a history for that folder
+4. Pushes the split history to `<repo_url>` on the given `[branch]` (defaults to `main`)
+
+**Example:**
+
+```bash
+git-handler --push-dir frontend git@github.com:user/frontend.git main
 ```
 
 ## Workflow Summary
